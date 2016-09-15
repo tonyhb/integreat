@@ -8,6 +8,8 @@ import (
 	"github.com/docker/integreat/modules"
 	"github.com/docker/integreat/types"
 
+	_ "github.com/docker/integreat/modules/dtr"
+
 	"github.com/Sirupsen/logrus"
 )
 
@@ -52,8 +54,6 @@ func (s *Suite) Run() error {
 		s.logger.WithError(err).Error("error initializing modules")
 		return err
 	}
-
-	s.logger.WithField("config", s.config).Info("starting tests")
 	return nil
 }
 
@@ -77,6 +77,5 @@ func (s *Suite) initModules() error {
 			return err
 		}
 	}
-
 	return nil
 }

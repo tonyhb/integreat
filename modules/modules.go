@@ -13,7 +13,7 @@ func init() {
 	modules = make(map[string]types.ModuleCreator)
 }
 
-func register(name string, f types.ModuleCreator) error {
+func Register(name string, f types.ModuleCreator) error {
 	if _, ok := modules[name]; ok {
 		return errors.ErrModuleRegistered
 	}
