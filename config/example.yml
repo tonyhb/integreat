@@ -1,0 +1,23 @@
+base:
+    version: 1
+modules:
+    - dtr
+    - docker
+config:
+    dtr:
+        host: 10.10.10.2
+        user: admin
+        pass: password
+tests:
+    - name: "create dtr users"
+      id: createUsers
+      command: "dtr::createUser"
+      args:
+          username: "test"
+          password: "test"
+      repeat: 10
+
+    - name: "create dtr repos"
+      id: createUsers
+      command: "dtr::createRepo"
+      repeat: 100
