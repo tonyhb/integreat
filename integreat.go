@@ -3,12 +3,14 @@ package integreat
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
+	"strings"
+	"time"
 
 	"github.com/docker/integreat/config"
 	"github.com/docker/integreat/modules"
-	"github.com/docker/integreat/types"
-
 	_ "github.com/docker/integreat/modules/dtr"
+	"github.com/docker/integreat/types"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -33,19 +35,29 @@ func New(opts Opts) (*Suite, error) {
 		return nil, fmt.Errorf("error reading configuration: %s", err)
 	}
 
+	seed := config.Base.Seed
+	if seed == 0 {
+		seed = time.Now().Unix()
+	}
+
 	return &Suite{
-		config:  config,
 		logger:  opts.Logger,
+		rand:    rand.New(rand.NewSource(seed)),
+		config:  config,
 		modules: map[string]types.Module{},
+		results: map[string][]types.TestResult{},
 	}, nil
 }
 
 // Suite represents the entire suite of tests defined by the YAML file to run
 type Suite struct {
 	logger *logrus.Logger
-	config *config.Configuration
+	rand   *rand.Rand
+	config *types.Configuration
 
 	modules map[string]types.Module
+
+	results map[string][]types.TestResult
 }
 
 func (s *Suite) Run() error {
@@ -54,7 +66,52 @@ func (s *Suite) Run() error {
 		s.logger.WithError(err).Error("error initializing modules")
 		return err
 	}
+
+	for _, test := range s.config.Tests {
+		s.logger.WithFields(logrus.Fields{
+			"id":      test.Id,
+			"name":    test.Name,
+			"command": test.Command,
+			"args":    test.Args,
+			"repeat":  test.Repeat,
+		}).Info("running command")
+
+		cmd, err := s.resolveCommand(test.Command)
+		if err != nil {
+			s.logger.WithError(err).Error("error resolving command")
+			return err
+		}
+
+		if test.Repeat == 0 {
+			test.Repeat = 1
+		}
+
+		for i := 1; i <= test.Repeat; i++ {
+			// TODO: store result and link to future tests
+			_, err = cmd(test.Args)
+			if err != nil {
+				s.logger.WithError(err).Error("error running command")
+				return err
+			}
+		}
+
+	}
+
 	return nil
+}
+
+func (s *Suite) resolveCommand(cmd string) (types.TestCommand, error) {
+	// each command is in the format of "module::FuncName"
+	parts := strings.SplitN(cmd, "::", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid command '%s'", cmd)
+	}
+	module, ok := s.modules[parts[0]]
+	if !ok {
+		return nil, fmt.Errorf("unknown module '%s'", parts[0])
+	}
+
+	return module.GetCommand(parts[1])
 }
 
 // initModules attempts to construct each module suite with config options
@@ -71,11 +128,16 @@ func (s *Suite) initModules() error {
 			return err
 		}
 
-		config, _ := s.config.Config[name]
-		s.modules[name], err = creator(config)
+		s.modules[name], err = creator(types.ModuleOpts{
+			Config: s.config.Config,
+			Logger: s.logger,
+			Rand:   s.rand,
+		})
+
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }

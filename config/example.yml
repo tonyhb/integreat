@@ -7,12 +7,33 @@ config:
         host: 10.10.10.2
         user: admin
         pass: password
+    docker:
+        host: "unix:///var/run/docker.sock"
+        version: "v1.23"
 # TODO: setup map
 tests:
     - name: "create dtr users"
       id: createUsers
-      command: "dtr::createUser"
+      command: "dtr::CreateRandomUser"
       args:
-          username: "test"
           password: "test"
       repeat: 10
+      subtests:
+          - name: "create repo for user"
+            id: createRepo
+            command: "dtr::createRandomRepo"
+            args:
+                namespace: "createUsers.name"
+            repeat: 3
+            subtests:
+                - name: "create random local image"
+                  id: createRandomImage
+                  command: "docker::createRandomImage"
+                  args:
+                      registry: 10.10.10.2
+                      namespace: "createUsers.name"
+                      reponame: "createRepo.name"
+                  subtests:
+                      - name: "push random local image"
+                        id: pushImage
+                        command: "docker::pushRandomImage"

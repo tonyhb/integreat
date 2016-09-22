@@ -11,7 +11,11 @@ img:
 	docker build -t integreat:latest ./build
 
 run:
-	docker run -ti --rm -v $(shell pwd -P):/src integreat:latest integreat /src/config/example.yml
+	docker run --net host -ti --rm \
+		-v $(shell pwd -P):/src \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		integreat:latest \
+		integreat /src/config/example.yml
 
 clean:
 	rm build/integreat

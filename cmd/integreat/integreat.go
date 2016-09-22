@@ -26,7 +26,7 @@ func main() {
 
 	err = suite.Run()
 	if err != nil {
-		fmt.Printf("Testing error: %s\n", err)
+		fmt.Printf("testing error\n")
 		os.Exit(1)
 	}
 }

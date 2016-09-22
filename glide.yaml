@@ -3,3 +3,9 @@ import:
 - package: gopkg.in/yaml.v2
 - package: github.com/Sirupsen/logrus
   version: ^0.10.0
+- package: github.com/pkg/errors
+  version: ^0.7.1
+- package: github.com/docker/docker
+  version: ^1.12.1
+  subpackages:
+  - client
