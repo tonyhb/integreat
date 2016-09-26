@@ -1,5 +1,6 @@
 base:
     version: 1
+    seed: 1
 modules:
     - dtr
     - registry
@@ -14,6 +15,10 @@ config:
     registry:
         host: "https://10.10.10.2/"
 tests:
+    - name: "push"
+      id: push
+      command: "registry::PushRandomImage"
+      repeat: 10
     - name: "create dtr users"
       id: createUsers
       command: "dtr::CreateRandomUser"
@@ -39,7 +44,3 @@ tests:
                       - name: "push random local image"
                         id: pushImage
                         command: "docker::pushRandomImage"
-    - name: "push"
-      id: push
-      command: "registry::PushRandomImage"
-

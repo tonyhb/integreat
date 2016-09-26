@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/integreat/modules"
 	itypes "github.com/docker/integreat/types"
+	"github.com/docker/integreat/util"
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/manifest/schema2"
@@ -61,7 +62,7 @@ func (r *Registry) PushRandomImage(a itypes.TestArgs) (itypes.TestResult, error)
 
 func (r *Registry) pushRandomImage() error {
 	ctx := context.Background()
-	tag := "foo"
+	tag := util.RandomString(r.rand, 10)
 
 	repo, err := r.getRepo(ctx, "admin/test")
 	if err != nil {
@@ -73,7 +74,7 @@ func (r *Registry) pushRandomImage() error {
 		&v2LayerPush{
 			rand:        r.rand,
 			layerNumber: 0,
-			size:        2 ^ 24,
+			size:        67108864,
 			repo:        repo,
 		},
 	}
@@ -83,8 +84,9 @@ func (r *Registry) pushRandomImage() error {
 	}
 
 	// Create the manifest for this image
-	builder := schema2.NewManifestBuilder(repo.Blobs(ctx), []byte{})
+	builder := schema2.NewManifestBuilder(repo.Blobs(ctx), []byte("{}"))
 	for _, i := range layers {
+		fmt.Println("Appending layer", i)
 		if err := builder.AppendReference(i.(*v2LayerPush)); err != nil {
 			return err
 		}

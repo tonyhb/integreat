@@ -66,7 +66,7 @@ func (v v2LayerPush) Upload(ctx context.Context, progressOutput progress.Output)
 		<-compressDone
 	}()
 
-	nn, err := layerUpload.ReadFrom(tee)
+	size, err := layerUpload.ReadFrom(tee)
 	compressReader.Close()
 	if err != nil {
 		return distribution.Descriptor{}, err
@@ -80,7 +80,7 @@ func (v v2LayerPush) Upload(ctx context.Context, progressOutput progress.Output)
 	return distribution.Descriptor{
 		Digest:    pushDigest,
 		MediaType: schema2.MediaTypeLayer,
-		Size:      nn,
+		Size:      size,
 	}, nil
 }
 
@@ -119,7 +119,7 @@ func createTar(r *rand.Rand, uncompressedSize int64) (io.Reader, error) {
 // the UploadDescriptor interface, which is used for internally
 // identifying layers that are being uploaded.
 func (v *v2LayerPush) SetRemoteDescriptor(descriptor distribution.Descriptor) {
-	fmt.Println("SETTING DESCRIPTOR", descriptor)
+	fmt.Printf("Layer uploaded: %s\n", descriptor.Digest)
 	v.descriptor = descriptor
 }
 
@@ -127,7 +127,7 @@ func (v *v2LayerPush) Descriptor() distribution.Descriptor {
 	return v.descriptor
 }
 
-const compressionBufSize = 2 ^ 15
+const compressionBufSize = 32768
 
 // compress returns an io.ReadCloser which will supply a compressed version of
 // the provided Reader. The caller must close the ReadCloser after reading the
