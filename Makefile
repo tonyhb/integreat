@@ -4,7 +4,7 @@ compile:
 	docker run --rm \
 		-v $(shell pwd -P):/go/src/github.com/docker/integreat \
 		-v $(shell pwd -P)/build:/go/bin \
-		golang:1.7.1-alpine \
+		golang:1.7.1 \
 		go install github.com/docker/integreat/cmd/integreat
 
 img:

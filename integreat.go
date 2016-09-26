@@ -10,6 +10,7 @@ import (
 	"github.com/docker/integreat/config"
 	"github.com/docker/integreat/modules"
 	_ "github.com/docker/integreat/modules/dtr"
+	_ "github.com/docker/integreat/modules/registry"
 	"github.com/docker/integreat/types"
 
 	"github.com/Sirupsen/logrus"

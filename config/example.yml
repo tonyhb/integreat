@@ -2,6 +2,7 @@ base:
     version: 1
 modules:
     - dtr
+    - registry
 config:
     dtr:
         host: 10.10.10.2
@@ -10,14 +11,15 @@ config:
     docker:
         host: "unix:///var/run/docker.sock"
         version: "v1.23"
-# TODO: setup map
+    registry:
+        host: "https://10.10.10.2/"
 tests:
     - name: "create dtr users"
       id: createUsers
       command: "dtr::CreateRandomUser"
       args:
           password: "test"
-      repeat: 10
+      repeat: 1
       subtests:
           - name: "create repo for user"
             id: createRepo
@@ -37,3 +39,7 @@ tests:
                       - name: "push random local image"
                         id: pushImage
                         command: "docker::pushRandomImage"
+    - name: "push"
+      id: push
+      command: "registry::PushRandomImage"
+

@@ -8,4 +8,20 @@ import:
 - package: github.com/docker/docker
   version: ^1.12.1
   subpackages:
+  - layer
+  - pkg/progress
   - client
+  - api/types
+- package: github.com/docker/distribution
+  subpackages:
+  - manifest/schema2
+  - registry/client
+- package: github.com/docker/engine-api
+  version: ^0.4.0
+  subpackages:
+  - types
+- package: github.com/docker/go-connections
+  version: ^0.2.1
+  subpackages:
+  - tlsconfig
+- package: github.com/docker/libtrust

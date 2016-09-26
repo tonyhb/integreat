@@ -1,51 +1,145 @@
-hash: adc2c367a392aef2b9b0979c618468c72119f312926bb014d6a549f93b73e20a
-updated: 2016-09-19T13:41:04.177174275-07:00
+hash: 5dfb99b7efc58c24f68036d7f05c611ec5b602923b086f5549dd40c7159a6e84
+updated: 2016-09-26T14:43:04.025825031-07:00
 imports:
-- name: github.com/docker/distribution
-  version: cfad4321c10fd132c3ce74bb1c5cfde91e53e785
+- name: github.com/Azure/go-ansiterm
+  version: fa152c58bc15761d0200cb75fe958b89a9d4888e
   subpackages:
-  - reference
+  - winterm
+- name: github.com/docker/distribution
+  version: 431cfa3179d9b3766e39f6a74283db8bb5a13209
+  subpackages:
+  - manifest/schema2
+  - registry/client
   - digest
+  - reference
+  - registry/client/transport
+  - context
+  - manifest/manifestlist
+  - manifest/schema1
+  - registry/api/errcode
+  - registry/api/v2
+  - registry/client/auth
+  - manifest
+  - registry/storage/cache
+  - registry/storage/cache/memory
+  - uuid
 - name: github.com/docker/docker
   version: 23cf638307f030cd8d48c9efc21feec18a6f88f8
   subpackages:
+  - layer
+  - pkg/progress
   - client
   - api/types
-  - api/types/container
-  - api/types/filters
-  - api/types/network
-  - api/types/reference
-  - api/types/registry
-  - api/types/swarm
-  - api/types/time
-  - api/types/versions
-  - client/transport
-  - client/transport/cancellable
-- name: github.com/docker/go-connections
-  version: 988efe982fdecb46f01d53465878ff1f2ff411ce
+  - distribution
+  - distribution/xfer
+  - registry
+  - api
+  - distribution/metadata
+  - dockerversion
+  - image
+  - image/v1
+  - pkg/ioutils
+  - pkg/stringid
+  - reference
+  - pkg/archive
+  - daemon/graphdriver
+  - pkg/idtools
+  - opts
+  - pkg/httputils
+  - pkg/mflag
+  - pkg/tarsum
+  - pkg/system
+  - api/server/httputils
+  - pkg/parsers/kernel
+  - pkg/useragent
+  - pkg/longpath
+  - pkg/random
+  - pkg/fileutils
+  - pkg/pools
+  - pkg/promise
+  - pkg/chrootarchive
+  - pkg/mount
+  - pkg/plugins
+  - pkg/jsonmessage
+  - pkg/homedir
+  - pkg/reexec
+  - pkg/plugins/transport
+  - pkg/jsonlog
+  - pkg/term
+  - pkg/term/windows
+- name: github.com/docker/engine-api
+  version: 3d1601b9d2436a70b0dfc045a23f6503d19195df
   subpackages:
-  - sockets
+  - types
+  - types/registry
+  - types/container
+  - types/filters
+  - types/network
+  - types/swarm
+  - types/versions
+  - types/blkiodev
+  - types/strslice
+- name: github.com/docker/go-connections
+  version: 990a1a1a70b0da4c4cb70e117971a4f0babfbf1a
+  subpackages:
   - tlsconfig
+  - sockets
+  - nat
+- name: github.com/docker/go-units
+  version: f2145db703495b2e525c59662db69a7344b00bb8
+- name: github.com/docker/libtrust
+  version: fa567046d9b14f6aa788882a950d69651d230b21
+- name: github.com/golang/protobuf
+  version: 8d92cf5fc15a4382f8964b08e1f42a75c0591aa3
+  subpackages:
+  - proto
+- name: github.com/gorilla/context
+  version: 14f550f51af52180c2eefed15e5fd18d63c0a64a
+- name: github.com/gorilla/mux
+  version: e444e69cbd2e2e3e0749a2f3c717cec491552bbf
+- name: github.com/mattn/go-shellwords
+  version: 525bedee691b5a8df547cb5cf9f86b7fb1883e24
 - name: github.com/Microsoft/go-winio
   version: ce2922f643c8fd76b46cadc7f404a06282678b34
 - name: github.com/opencontainers/runc
-  version: 52454cf90807727923b375afd7d84ac8fd523959
+  version: 282b254073046b3d981d760b798bcdb5c685f939
   subpackages:
   - libcontainer/user
 - name: github.com/pkg/errors
   version: 17b591df37844cde689f4d5813e5cea0927d8dd2
 - name: github.com/Sirupsen/logrus
   version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+- name: github.com/vbatts/tar-split
+  version: ae8540dc4785ad64f9164c605d0d37151f5876b5
+  subpackages:
+  - tar/asm
+  - tar/storage
+  - archive/tar
 - name: golang.org/x/net
   version: 4876518f9e71663000c348837735820161a42df7
   subpackages:
   - context
   - proxy
+  - http2
+  - trace
+  - http2/hpack
+  - internal/timeseries
 - name: golang.org/x/sys
   version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
   - windows
+- name: google.golang.org/grpc
+  version: d3ddb4469d5a1b949fc7a7da7c1d6a0d1b6de994
+  subpackages:
+  - codes
+  - credentials
+  - grpclog
+  - internal
+  - metadata
+  - naming
+  - peer
+  - transport
 - name: gopkg.in/yaml.v2
   version: 31c299268d302dd0aa9a0dcf765a3d58971ac83f
 testImports: []
