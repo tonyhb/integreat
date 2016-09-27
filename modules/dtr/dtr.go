@@ -59,8 +59,9 @@ func (s *Suite) CreateUser(a types.TestArgs) (types.TestResult, error) {
 }
 
 func (s *Suite) CreateRandomUser(a types.TestArgs) (types.TestResult, error) {
+	name := util.RandomString(s.rand, 10)
 	user := map[string]interface{}{
-		"name":     util.RandomString(s.rand, 10),
+		"name":     name,
 		"password": a.String("password"),
 		"isActive": true,
 		"isAdmin":  a.Bool("isadmin"),
@@ -68,7 +69,20 @@ func (s *Suite) CreateRandomUser(a types.TestArgs) (types.TestResult, error) {
 
 	s.logger.WithField("data", user).Info("creating user")
 
-	return s.client.Do("POST", "/enzi/v0/accounts", user)
+	result, err := s.client.Do("POST", "/enzi/v0/accounts", user)
+	if err != nil {
+		return nil, err
+	}
+
+	repo := map[string]interface{}{
+		"name":       "test",
+		"visibility": "public",
+	}
+
+	_, err = s.client.Do("POST", "/api/v0/repositories/"+name, repo)
+
+	// Make a repo called "test" for this user
+	return result, err
 }
 
 func (s *Suite) CreateRepo(a types.TestArgs) (types.TestResult, error) {
@@ -81,7 +95,7 @@ func (s *Suite) CreateRepo(a types.TestArgs) (types.TestResult, error) {
 
 func (s *Suite) CreateUserAndRepo(a types.TestArgs) (types.TestResult, error) {
 	user, _ := s.CreateRandomUser(types.TestArgs{
-		"password": "test",
+		"password": "password",
 	})
 
 	return s.CreateRepo(types.TestArgs{

@@ -15,12 +15,15 @@ import (
 	"github.com/docker/distribution/manifest/schema2"
 	"github.com/docker/docker/layer"
 	"github.com/docker/docker/pkg/progress"
+
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
 // v2LayerPush fulfils the docker/docker/distribution/xfer.UplaodDescriptor
 // interface, allowing us to push layers to the registry.
 type v2LayerPush struct {
+	log         *logrus.Logger
 	rand        *rand.Rand
 	layerNumber int
 	size        int64
@@ -119,7 +122,7 @@ func createTar(r *rand.Rand, uncompressedSize int64) (io.Reader, error) {
 // the UploadDescriptor interface, which is used for internally
 // identifying layers that are being uploaded.
 func (v *v2LayerPush) SetRemoteDescriptor(descriptor distribution.Descriptor) {
-	fmt.Printf("Layer uploaded: %s\n", descriptor.Digest)
+	v.log.WithField("digest", descriptor.Digest).Info("Layer uploaded")
 	v.descriptor = descriptor
 }
 

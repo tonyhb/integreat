@@ -2,6 +2,7 @@ package registry
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"github.com/docker/integreat/util"
 
 	"github.com/docker/distribution"
+	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/manifest/schema2"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client"
@@ -23,6 +25,7 @@ import (
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/registry"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/libtrust"
 
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -38,10 +41,12 @@ func NewSuite(opts itypes.ModuleOpts) (itypes.Module, error) {
 		return nil, fmt.Errorf("registry config not found")
 	}
 	url, _ := url.Parse(cfg["host"].(string))
+	key, _ := libtrust.GenerateECP256PrivateKey()
 	return &Registry{
 		url:    url,
 		rand:   opts.Rand,
 		logger: opts.Logger,
+		key:    key,
 	}, nil
 }
 
@@ -49,6 +54,8 @@ type Registry struct {
 	rand   *rand.Rand
 	logger *logrus.Logger
 	url    *url.URL
+
+	key libtrust.PrivateKey
 }
 
 func (r *Registry) GetCommand(cmd string) (itypes.TestCommand, error) {
@@ -56,15 +63,21 @@ func (r *Registry) GetCommand(cmd string) (itypes.TestCommand, error) {
 }
 
 func (r *Registry) PushRandomImage(a itypes.TestArgs) (itypes.TestResult, error) {
-	err := r.pushRandomImage()
-	return itypes.TestResult{}, err
+	if users, ok := a["createUsers"]; ok {
+		for _, user := range users.([]itypes.TestResult) {
+			if err := r.pushRandomImage(user["name"].(string), "test"); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return itypes.TestResult{}, nil
 }
 
-func (r *Registry) pushRandomImage() error {
+func (r *Registry) pushRandomImage(namespace, name string) error {
 	ctx := context.Background()
 	tag := util.RandomString(r.rand, 10)
 
-	repo, err := r.getRepo(ctx, "admin/test")
+	repo, err := r.getRepo(ctx, namespace, name, "password")
 	if err != nil {
 		return err
 	}
@@ -72,6 +85,7 @@ func (r *Registry) pushRandomImage() error {
 	// Create each random layer
 	layers := []xfer.UploadDescriptor{
 		&v2LayerPush{
+			log:         r.logger,
 			rand:        r.rand,
 			layerNumber: 0,
 			size:        67108864,
@@ -83,10 +97,10 @@ func (r *Registry) pushRandomImage() error {
 		return err
 	}
 
+	// Attempt V2 manifest first
 	// Create the manifest for this image
 	builder := schema2.NewManifestBuilder(repo.Blobs(ctx), []byte("{}"))
 	for _, i := range layers {
-		fmt.Println("Appending layer", i)
 		if err := builder.AppendReference(i.(*v2LayerPush)); err != nil {
 			return err
 		}
@@ -98,13 +112,48 @@ func (r *Registry) pushRandomImage() error {
 	manSvc, _ := repo.Manifests(ctx)
 	putOptions := []distribution.ManifestServiceOption{distribution.WithTag(tag)}
 	if _, err = manSvc.Put(ctx, manifest, putOptions...); err != nil {
-		return err
+
+		diffids := []string{}
+		for _, i := range layers {
+			diffids = append(diffids, i.(*v2LayerPush).Descriptor().Digest.String())
+		}
+
+		config := map[string]interface{}{
+			"history": []map[string]interface{}{
+				{
+					"author": "integreat",
+				},
+			},
+			"rootfs": map[string]interface{}{
+				"diff_ids": diffids,
+			},
+		}
+
+		configByt, _ := json.Marshal(config)
+
+		// Fall back to V1 manifest (DTR 2.0)
+		manifestRef, err := reference.WithTag(repo.Named(), tag)
+		if err != nil {
+			return err
+		}
+		builder = schema1.NewConfigManifestBuilder(repo.Blobs(ctx), r.key, manifestRef, configByt)
+		for _, i := range layers {
+			builder.AppendReference(i.(*v2LayerPush))
+		}
+		manifest, err := builder.Build(ctx)
+		if err != nil {
+			return fmt.Errorf("error building manifest: %s", err)
+		}
+		fmt.Println(manifest)
+		if _, err = manSvc.Put(ctx, manifest, putOptions...); err != nil {
+			return fmt.Errorf("error saving manifest: %s", err)
+		}
 	}
 
-	return err
+	return nil
 }
 
-func (r *Registry) getRepo(ctx context.Context, repoName string) (distribution.Repository, error) {
+func (r *Registry) getRepo(ctx context.Context, user, repoName, pass string) (distribution.Repository, error) {
 	direct := &net.Dialer{
 		Timeout:   30 * time.Second,
 		KeepAlive: 30 * time.Second,
@@ -124,8 +173,8 @@ func (r *Registry) getRepo(ctx context.Context, repoName string) (distribution.R
 
 	// Set up auth config
 	authCfg := &types.AuthConfig{
-		Username:      "admin",
-		Password:      "password",
+		Username:      user,
+		Password:      pass,
 		ServerAddress: r.url.Host,
 	}
 	creds := registry.NewStaticCredentialStore(authCfg)
@@ -134,7 +183,7 @@ func (r *Registry) getRepo(ctx context.Context, repoName string) (distribution.R
 		Credentials: creds,
 		Scopes: []auth.Scope{
 			auth.RepositoryScope{
-				Repository: repoName,
+				Repository: user + "/" + repoName,
 				Actions:    []string{"push", "pull"},
 			},
 		},
@@ -144,7 +193,7 @@ func (r *Registry) getRepo(ctx context.Context, repoName string) (distribution.R
 	basicHandler := auth.NewBasicHandler(creds)
 	modifiers = append(modifiers, auth.NewAuthorizer(challengeManager, tokenHandler, basicHandler))
 
-	repoNameRef, err := reference.ParseNamed(repoName)
+	repoNameRef, err := reference.ParseNamed(user + "/" + repoName)
 	tr := transport.NewTransport(base, modifiers...)
 	repo, err := client.NewRepository(ctx, repoNameRef, r.url.String(), tr)
 	return repo, err
@@ -153,6 +202,5 @@ func (r *Registry) getRepo(ctx context.Context, repoName string) (distribution.R
 type BlankProgress struct{}
 
 func (b BlankProgress) WriteProgress(p progress.Progress) error {
-	fmt.Printf("Progress: %#v\n", p)
 	return nil
 }

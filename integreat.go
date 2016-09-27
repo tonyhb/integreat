@@ -68,6 +68,8 @@ func (s *Suite) Run() error {
 		return err
 	}
 
+	args := types.TestArgs{}
+
 	for _, test := range s.config.Tests {
 		s.logger.WithFields(logrus.Fields{
 			"id":      test.Id,
@@ -88,11 +90,22 @@ func (s *Suite) Run() error {
 		}
 
 		for i := 1; i <= test.Repeat; i++ {
-			// TODO: store result and link to future tests
-			_, err = cmd(test.Args)
+			if test.Args == nil {
+				test.Args = types.TestArgs{}
+			}
+			for k, v := range args {
+				test.Args[k] = v
+			}
+			result, err := cmd(test.Args)
 			if err != nil {
 				s.logger.WithError(err).Error("error running command")
 				return err
+			}
+
+			if _, ok := args[test.Id]; ok {
+				args[test.Id] = append(args[test.Id].([]types.TestResult), result)
+			} else {
+				args[test.Id] = []types.TestResult{result}
 			}
 		}
 
